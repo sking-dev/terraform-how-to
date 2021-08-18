@@ -1,2 +1,3 @@
-# terraform-how-to
-This project is to record and share what I learn from using Terraform in the real world.
+# Terraform How To
+
+This project is to record and share knowledge gained from using Terraform in the real world.
