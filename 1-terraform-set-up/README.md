@@ -15,3 +15,9 @@ To facilitate this, I need to move away from the standard installation of Terraf
 ### How to Run Multiple Versions of Terraform
 
 Check out [this guide what I wrote](Run-Multiple-Terraform-Versions-Windows.md) and all will be revealed!
+
+### How to Upgrade a Production Codebase
+
+Here's a step-by-step [guide to upgrading Terraform and provider versions](Upgrade-Terraform-Codebase.md) in existing code.
+
+----
