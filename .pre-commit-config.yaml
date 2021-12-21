@@ -5,12 +5,13 @@ repos:
   hooks:
     - id: terraform-validate
     - id: terraform-fmt
-    - id: tflint
-      args:
-        - "--module"
-        - "--deep"
-        - "--config=.tflint.hcl"
-# TODO: Add these extra hooks in Part Deux.
+    # TODO: Add this hook in Part Deux.
+    # - id: tflint
+    #   args:
+    #     - "--module"
+    #     - "--deep"
+    #     - "--config=.tflint.hcl"
+# TODO: Add these hooks in Part Trois.
 # - repo: git://github.com/antonbabenko/pre-commit-terraform
 #   rev: <VERSION> # Get the latest from: https://github.com/antonbabenko/pre-commit-terraform/releases
 #   hooks:
