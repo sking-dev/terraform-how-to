@@ -149,11 +149,80 @@ I don't think this is critical as such, but it does ensure that the existing cod
 
 TODO: Are there other other use cases for running pre-commit manually?
 
+----
+
 ### Run Hooks in Pipeline
 
-There is an argument for running pre-commit hooks in a CI pipeline.
+There's an argument for running pre-commit hooks in a CI pipeline.
 
-TODO: Spell this out and decide if it's A Good Thing or a red herring.
+UPDATE: OK - let's get into this!
+
+_What is the argument for running pre-commit hooks in the pipeline?_
+
+As I see it, the main reason to run pre-commit hooks in the pipeline as part of the build validation is (as) a "belt and braces" approach in case some team members don't run the hooks client-side.
+
+As with so many things, this sounds good in theory but, basically, it isn't feasible because it's anti-pattern.
+
+_How so?_
+
+Pre-commit hooks are effectively a gate between the commit and the push to the remote branch, and build validation runs as a gate on the merge to master which is too far right in the workflow.
+
+_So how do we go about this?_
+
+The compromise appears to be to run `pre-commit` in the pipeline as a CI task.  
+
+This can be either against all files **or** changed files only - the latter could be more efficient - which will cause the pipeline to fail if any files don't conform to the pre-commit hooks.
+
+This script will do the job in a CI pipeline task.
+
+```bash
+#!/bin/bash
+# Install pre-commit framework.
+pip install pre-commit
+
+# Verify version installed.
+pre-commit --version
+
+# Set up git hook scripts as per configuration file in repo.
+pre-commit install
+
+# Run pre-commit to check all files in repo.
+pre-commit run --all-files --show-diff-on-failure
+```
+
+However, from my testing so far...
+
+Because this script task runs on all (the) files in my IaC repository, it's taking a long time and it's failing with a big list of errors for `terraform fmt`.
+
+This is because I've only fixed the style convention issues on a small percentage of the files in my repository.  
+
+To be very honest, it will be a drag to resolve all these issues for the sake of this testing, so I've been trying to run `pre-commit` on **just** the files that have changed in the most recent commit.
+
+```bash
+# Run pre-commit to check any changed file.
+pre-commit run --from-ref origin/HEAD --to-ref HEAD
+```
+
+But...
+
+This opens up a can of worms because I need to tell `pre-commit` which branch to compare against the master branch.
+
+In the branching strategy that I'm using - TODO: add a link here to a pending document about GitOps workflow - this branch will change from one PR to the next, so I'll need to source the name of my feature branch from an Azure Pipeline variable and potentially supplement the `pre-commit` command with a Git command that ensures the branches are available to the `pre-commit` framework.
+
+```bash
+# Something like this (TBC)
+pre-commit run --files $(git diff --name-only HEAD main)
+```
+
+This is getting a little bit complicated, so I'm going to go for "Plan B" in the short term: run individual, equivalent CI tasks in my build validation pipeline as a quick(er) win.
+
+```plaintext
+Caveat:
+
+The downside of rolling back from running 'pre-commit' in the pipeline to mirroring what it does in CI tasks instead is that this will add some extra configuration work in terms of, setting up the CI tasks and keeping them up-to-date if the pre-commit change going forward.
+```
+
+TODO: The "Plan B" (above) will give me a quicker win, but I'm planning to revisit this again at a future date.  Watch this space!
 
 ----
 
@@ -170,3 +239,7 @@ Useful resources that haven't been acknowledged elsewhere in this document.
 <https://getbetterdevops.io/produce-reliable-terraform-code-with-pre-commit-hooks/>
 
 <https://lucytalksdata.com/pre-commit-the-gatekeeper-of-code-quality/>
+
+<https://stackoverflow.com/questions/68202525/pre-commit-tool-in-jenkins-pipelines-nitialize-and-stop-build>
+
+<https://pre-commit.com/#usage-in-continuous-integration>
