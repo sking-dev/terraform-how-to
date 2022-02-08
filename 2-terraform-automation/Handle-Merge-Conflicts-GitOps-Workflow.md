@@ -4,7 +4,7 @@ WIP (2022-02-08)
 
 ## Objective
 
-As an IaC engineer, I'd like to make my GitOps workflow robust and scalable by preventing merge conflicts or, when they do occur, by resolving them as quickly and efficiently as possible.
+As an IaC engineer, I'd like to make my GitOps workflow robust and scalable as possible by preventing merge conflicts or, when they do occur, by resolving them in a quick and efficient manner.
 
 ----
 
@@ -16,7 +16,7 @@ As an IaC engineer, I'd like to make my GitOps workflow robust and scalable by p
 
 Using **feature branches** (AKA "topic branches") will lead to smaller, shorter-lived units of work, which are focused on explicit areas of the codebase, so the team should be able to commit and merge to master more frequently.  
 
-More frequent commits will improve the chances of avoiding merge conflicts.
+More frequent commits will improve the chances of avoiding merge conflicts.  That is, in comparison to a long(er) lived branch that will have a greater quantity of commits over a longer period of time.  Both of these factors - increased time and scope - increase the chances of commits that impact on multiple areas of the codebase and thus code that's being modified elsewhere.
 
 Each feature branch should begin its life as an up-to-date working copy of the master branch.
 
@@ -28,13 +28,30 @@ git checkout -b 1234-nsg-add-rule-smtp
 
 Each feature branch should be as short-lived as possible, so that it generates a small(er) number of commits to merge.
 
-This should reduce the potential for merge conflicts in comparison to a long(er) lived branch that will have a greater quantity of commits over a longer period of time.  Both of these factors - increased time and scope - increase the chances of commits that impact on multiple areas of the codebase and thus code that's being modified elsewhere.
+However, "best laid plans" and all that...  There will at some point be feature branches that, for whatever reason, live longer than is strictly desirable.  In this case, it's best practice to update your local feature branch with any changes to master that have happened since you created your branch.
+
+```bash
+git branch # Confirm you're still on your feature branch
+git checkout master
+git pull origin master
+git checkout your-feature-branch # Go back to your feature branch
+git merge master # This will surface any merge conflicts that may exist between your local code & what's in master - uh oh!
+
+# NOTE: It should be possible to do 'git merge origin master' on your feature branch - save having to switch branches as per above - but I can't get this to work for some reason.
+```
+
+NOTE: There seems to be a big debate in Git circles over whether `git merge` is better than `git rebase` or vice versa.  My head's spinning after reading a host of blog posts and threads on this topic but, overall, my inclination at the moment is towards `git merge` (but watch this space..!)
+
+- <https://mutesoft.com/spaces/software/git-refresh-feature-branch-from-master.html>
+- <https://www.perforce.com/blog/vcs/git-rebase-vs-git-merge-which-better>
+- <https://belev.dev/git-merge-vs-rebase-to-keep-feature-branch-up-to-date>
+- <https://timwise.co.uk/2019/10/14/merge-vs-rebase/>
 
 ### Keep Feature Branches Focused
 
 Keep your changes to the minimum required to successfully achieve your objective e.g. the scope / requirement as defined in the work item.
 
-Don't be tempted to fix things in other files - even simple style convention infringements - as this increases the chances of modifying a file that another team member else has merged to master.
+Don't be tempted to fix other things that might catch your eye in other files - even if they're simple typos or poor formatting - as this increases the chances of modifying a file that another team member has recently merged to master.
 
 ### Protect the Master Branch
 
@@ -44,7 +61,7 @@ In other words, there has to be a Pull Request (PR) that's reviewed and approved
 
 This will guard against the possibility that a team member forgets to create a feature branch before making their changes.
 
-### Pull Request Best Practice
+### Follow Pull Request Best Practice
 
 This can also be referred to as "good PR hygiene".
 
@@ -67,7 +84,7 @@ In the context of a GitOps workflow for IaC deployments, with some team members 
 
 Don't allow "squash merge" i.e. mandate "basic merge (no fast forward)".  This can be enforced on PRs via the branch policy on the master branch.
 
-In conjunction with properly crafted commit messages, this will give a full and meaningful commit history which should provide a meaningful audit trail for troubleshooting and resolving merge conflicts.
+In conjunction with properly crafted commit messages, this will give a full and meaningful commit history which should provide a meaningful audit trail for troubleshooting / resolving merge conflicts.
 
 See the following links for some additional background / discussion.
 
@@ -75,11 +92,11 @@ See the following links for some additional background / discussion.
 - <https://github.com/nus-cs2103-AY1819S1/forum/issues/46>
 - <https://anuragbhandari.com/coding-tech/merge-commit-vs-squash-commit-in-git-1895/>
 
-### Pre-commit Hooks
+### Make Use of Pre-commit Hooks
 
-_Any scope here for preventing a commit that's going to generate a merge conflict?_
+TODO: Investigate if there's any scope here for preventing a commit that's going to generate a merge conflict?
 
-### Strong Communication
+### Ensure Strong Communication
 
 Facilitate team visibility of what each other is working on e.g. Azure Boards plus integration with Teams.
 
@@ -93,7 +110,11 @@ Or can you wait until the in-flight feature branch as been merged has finished a
 
 ## Resolve Merge Conflicts
 
-_How to approach this?  Roll back via the command line?_  
+_How best to approach this?  Undo and return to a "last known good" state?  Or resolve it straight away using the pointers that Git will provide?_
+
+- <https://css-tricks.com/merge-conflicts-what-they-are-and-how-to-deal-with-them/> ***
+
+### Undo
 
 `git revert`
 
@@ -101,7 +122,13 @@ Or...
 
 `git merge --abort`
 
-_Or edit affected files?_
+- <https://www.codeleaks.io/how-to-undo-git-merge/>
+
+### Resolve
+
+Pending.
+
+----
 
 ### Write a Playbook for Possible Scenarios
 
@@ -136,5 +163,3 @@ _What are the likely scenarios?_
 <https://microsoft.github.io/code-with-engineering-playbook/source-control/git-guidance/> ***
 
 <https://docs.microsoft.com/en-us/azure/devops/repos/git/merging?view=azure-devops&tabs=command-line>
-
-<https://www.git-tower.com/learn/git/faq/solve-merge-conflicts/>
