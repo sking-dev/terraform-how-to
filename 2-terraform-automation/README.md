@@ -13,3 +13,11 @@ Check out this [step-by-step guide](Use-Git-Pre-Commit-Hooks-Terraform-IaC.md) t
 As an IaC engineer, I'd like to set up a CI/CD pipeline in Azure DevOps to support a GitOps-based approach to IaC deployments using Terraform.
 
 Take a look at this [WIP guide](Set-Up-GitOps-CI-CD-Pipeline.md) to see where I've got to so far.
+
+----
+
+## How to Handle Merge Conflicts in a GitOps Workflow
+
+As an IaC engineer, I'd like to make my GitOps workflow as robust and scalable as possible by preventing merge conflicts as far as possible or, when they do occur, by resolving them as quickly and efficiently as possible.
+
+Check out [my WIP here](Handle-Merge-Conflicts-GitOps-Workflow.md).
