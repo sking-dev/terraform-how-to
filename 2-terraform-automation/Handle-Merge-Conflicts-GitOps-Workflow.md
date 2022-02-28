@@ -116,11 +116,39 @@ _How best to approach this?  Undo and return to a "last known good" state?  Or r
 
 ### Undo
 
-`git revert`
+Is it appropriate to use `git revert` or is `git merge --abort` a better choice for this GitOps workflow scenario?
 
-Or...
+My current understanding is that `git revert` is intended to rollback to a particular commit, either the "last known good" commit or one further back in the timeline, depending on what the situation requires.
 
-`git merge --abort`
+It seems to me like it would be useful if the issue was on the master branch but it doesn't seem the right choice when it comes to smoothing out local difficulties with feature branches.
+
+Here are my thoughts (so far!) on how `git merge --abort` could be used to rollback in the feature branch context.
+
+```plaintext
+A feature branch is started.
+Work is put on hold, for whatever reason, for a number of hours / days / weeks (delete as appropriate!)
+The longer the delay in closing off the feature branch, the greater the chance of encountering merge conflicts!
+So...
+Run the command 'git merge origin master' and see if any merge conflicts are flagged up.
+No?  Amazing!  Proceed with the PR and merge to master.
+Yes?  OK, here's what we'll do.
+- Abort the merge
+- Make sure there's a record of the intended changes e.g. dump them in a text file
+- Delete the feature branch
+- Pull from the master branch to update the local copy
+- Create a new feature branch
+- If still appropriate, reproduce previous changes in this new feature branch
+- Try the merge again...
+
+TODO: Is there a better / neater way of capturing chnages before deleting the original feature branch?
+
+Have a look at using 'git stash'.
+Then 'git checkout -b my-branch-v2'.
+Then 'git stash pop' OR 'git stash apply' (which is better?)
+Then go back & delete the original feature branch.
+```
+
+Resources to look at:
 
 - <https://www.codeleaks.io/how-to-undo-git-merge/>
 
