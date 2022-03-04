@@ -98,59 +98,37 @@ TODO: Investigate if there's any scope here for preventing a commit that's going
 
 ### Ensure Strong Communication
 
-Facilitate team visibility of what each other is working on e.g. Azure Boards plus integration with Teams.
+Facilitate visibility of what each team member is working on e.g. make use of Azure Boards, including integration with Microsoft Teams.
 
 Plan your work - do you need to work on the same code at exactly the same time as someone else?  
 
-If this is mission-critical, could you collaborate and work on the code together from a single workstation?
-
-Or can you wait until the in-flight feature branch as been merged has finished and then begin your work item?
+- If your change  is mission-critical, could you collaborate and work on the code together to make the changes from a single workstation?
+- Or can you wait until the in-flight feature branch has been merged to master and then begin your work item?
 
 ----
 
 ## Resolve Merge Conflicts
 
-_How best to approach this?  Undo and return to a "last known good" state?  Or resolve it straight away using the pointers that Git will provide?_
+_What's the best way to approach this?_  
 
-- <https://css-tricks.com/merge-conflicts-what-they-are-and-how-to-deal-with-them/> ***
+_Undo the merge and return to a "last known good" state?_
+
+_Or face it head-on and resolve the merge conflict using the pointers that Git will provide?_
+
+### What is a Merge Conflict
+
+Here are some useful articles that explain what a merge conflicts are (why they happen) and suggest how to resolve them.
+
+- <https://www.atlassian.com/git/tutorials/using-branches/merge-conflicts>
+- <https://css-tricks.com/merge-conflicts-what-they-are-and-how-to-deal-with-them/>
+- <https://opensource.com/article/20/4/git-merge-conflict>
+- <https://docs.microsoft.com/en-us/azure/devops/repos/git/merging?view=azure-devops&tabs=command-line>
 
 ### Undo
 
-Is it appropriate to use `git revert` or is `git merge --abort` a better choice for this GitOps workflow scenario?
+After much strenuous reading on the subject of merge conflicts, I have come to the conclusion that despite my best efforts - the guard rails I'm building to prevent merge conflicts - merge conflicts **will** occur, so I'm going to adopt the approach that whichever team member's "in the chair" should take the responsibility to analyse why a merge conflict is happening and then resolve it line-by-line as required.
 
-My current understanding is that `git revert` is intended to rollback to a particular commit, either the "last known good" commit or one further back in the timeline, depending on what the situation requires.
-
-It seems to me like it would be useful if the issue was on the master branch but it doesn't seem the right choice when it comes to smoothing out local difficulties with feature branches.
-
-Here are my thoughts (so far!) on how `git merge --abort` could be used to rollback in the feature branch context.
-
-```plaintext
-A feature branch is started.
-Work is put on hold, for whatever reason, for a number of hours / days / weeks (delete as appropriate!)
-The longer the delay in closing off the feature branch, the greater the chance of encountering merge conflicts!
-So...
-Run the command 'git merge origin master' and see if any merge conflicts are flagged up.
-No?  Amazing!  Proceed with the PR and merge to master.
-Yes?  OK, here's what we'll do.
-- Abort the merge
-- Make sure there's a record of the intended changes e.g. dump them in a text file
-- Delete the feature branch
-- Pull from the master branch to update the local copy
-- Create a new feature branch
-- If still appropriate, reproduce previous changes in this new feature branch
-- Try the merge again...
-
-TODO: Is there a better / neater way of capturing chnages before deleting the original feature branch?
-
-Have a look at using 'git stash'.
-Then 'git checkout -b my-branch-v2'.
-Then 'git stash pop' OR 'git stash apply' (which is better?)
-Then go back & delete the original feature branch.
-```
-
-Resources to look at:
-
-- <https://www.codeleaks.io/how-to-undo-git-merge/>
+For the record, [here are my musings on the "undo" approach](Undo-Merge-Conflict.md) in case anyone's interested (you never know!) or I need to revisit this idea in the future.
 
 ### Resolve
 
@@ -189,5 +167,3 @@ _What are the likely scenarios?_
 <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/addressing-merge-conflicts/resolving-a-merge-conflict-using-the-command-line> ***
 
 <https://microsoft.github.io/code-with-engineering-playbook/source-control/git-guidance/> ***
-
-<https://docs.microsoft.com/en-us/azure/devops/repos/git/merging?view=azure-devops&tabs=command-line>
