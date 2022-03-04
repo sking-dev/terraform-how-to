@@ -96,6 +96,10 @@ See the following links for some additional background / discussion.
 
 TODO: Investigate if there's any scope here for preventing a commit that's going to generate a merge conflict?
 
+- <https://stackoverflow.com/questions/24213948/prevent-file-with-merge-conflicts-from-getting-committed-in-git>
+- <https://www.elliotjordan.com/posts/pre-commit-01-intro/>
+- <https://github.com/pre-commit/pre-commit-hooks#check-merge-conflict>
+
 ### Ensure Strong Communication
 
 Facilitate visibility of what each team member is working on e.g. make use of Azure Boards, including integration with Microsoft Teams.
