@@ -18,6 +18,6 @@ Take a look at this [WIP guide](Set-Up-GitOps-CI-CD-Pipeline.md) to see where I'
 
 ## How to Handle Merge Conflicts in a GitOps Workflow
 
-As an IaC engineer, I'd like to make my GitOps workflow as robust and scalable as possible by preventing merge conflicts as far as possible or, when they do occur, by resolving them as quickly and efficiently as possible.
+As an IaC engineer, I'd like to make my GitOps workflow robust and scalable as possible by preventing merge conflicts or, when they do occur, by resolving them in a quick and efficient manner.
 
-Check out [my WIP here](Handle-Merge-Conflicts-GitOps-Workflow.md).
+Check out [my somewhat subjective guide here](Handle-Merge-Conflicts-GitOps-Workflow.md).
