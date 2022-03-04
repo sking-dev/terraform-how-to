@@ -18,3 +18,8 @@ repos:
 #     - id: terraform_tfsec
 #     - id: terraform_docs
 #     - id: checkov
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.1.0 # Get the latest version from: https://github.com/pre-commit/pre-commit-hooks/releases
+  hooks:
+    - id: check-merge-conflict
