@@ -1,0 +1,95 @@
+---
+trigger:
+    branches:
+        include:
+            - master
+    paths:
+        include: 
+            - terraform/sandbox
+ 
+pr: none
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+variables:
+- name: tfversion
+  value: 1.1.5
+  # This variable group is *not* created in this pipeline file (it's created in Azure DevOps)
+- group: kv-sandbox
+       
+stages :
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        continueOnError: false
+        steps:
+        - task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+          displayName: 'Install Terraform $(tfversion)'
+          inputs:
+            terraformVersion: $(tfversion)
+        - script: |
+            terraform init -backend-config="access_key=$(sandbox-tfstate-key1)"
+          workingDirectory: terraform/sandbox
+          displayName: 'Terraform Init (Sandbox)'
+        - script: |
+            terraform validate
+          workingDirectory: terraform/sandbox
+          displayName: 'Terraform Validate (Sandbox)'
+        - script: |
+            terraform plan -input=false -out=tfplan -var="spn-client-id=$(sandbox-spn-client-id)" -var="spn-client-secret=$(sandbox-spn-secret)" -var="spn-tenant-id=$(sandbox-spn-tenant-id)" -var="tfstate-key1=$(sandbox-tfstate-key1)" -var-file="/home/vsts/work/1/s/terraform/sandbox/terraform.tfvars"
+          workingDirectory: terraform/sandbox
+          displayName: 'Terraform Plan (Sandbox)'
+        - task: ArchiveFiles@2
+          displayName: 'Archive Terraform Files'
+          inputs:
+            rootFolderOrFile: terraform/sandbox
+            archiveType: tar
+            tarCompression: 'gz'
+            archiveFile: '$(Build.ArtifactStagingDirectory)/sandbox-tfplan.tgz'
+            replaceExistingArchive: true
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish Terraform Artifact'
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'sandbox-tfplan'
+            publishLocation: 'Container'    
+
+  - stage: Apply
+    displayName: 'Apply'
+    jobs:
+    - deployment: ApplySandbox
+      displayName: 'Deploy to Sandbox Environment'
+      # Run this stage *if* the previous stage succeeded *and* the build reason is *not* a Pull Request.
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # This environment is *not* created in this pipeline file (it's created in Azure DevOps)
+      environment: 'SandboxEnvironment'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: none
+            - task: DownloadBuildArtifacts@0
+              displayName: 'Download Terraform Artifact'
+              inputs:
+                artifactName: 'sandbox-tfplan'                
+            - task: ExtractFiles@1
+              displayName: 'Extract Terraform Files'
+              inputs:
+                archiveFilePatterns: '$(System.ArtifactsDirectory)/sandbox-tfplan/sandbox-tfplan.tgz'
+                destinationFolder: '$(System.DefaultWorkingDirectory)/'
+                cleanDestinationFolder: false
+                overwriteExistingFiles: true
+            - task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+              displayName: 'Install Terraform $(tfversion)'
+              inputs:
+                terraformVersion: $(tfversion)
+            - script: 'terraform init -backend-config="access_key=$(sandbox-tfstate-key1)"'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/sandbox'
+              displayName: 'Terraform Init'
+            - script: |
+                terraform apply -auto-approve -input=false tfplan
+              workingDirectory: '$(System.DefaultWorkingDirectory)/sandbox'
+              displayName: 'Terraform Apply'

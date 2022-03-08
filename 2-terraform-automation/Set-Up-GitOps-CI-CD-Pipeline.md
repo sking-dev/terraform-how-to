@@ -116,7 +116,11 @@ Pending.
 
 ## Refactor to Multi-stage YAML Pipeline
 
-Pending.
+We'll start off with a "v1" approach to the YAML pipelines where we incorporate all of the stages - basically, build and release - into a single YAML pipeline file.
+
+Here's an example of what [a "v1" YAML pipeline file](azure-pipelines.sandbox-deploy-v1.yml) looks like.
+
+Please note, this example has a few rough edges as per below.
 
 ### Improvements to YAML Pipeline
 
