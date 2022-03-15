@@ -1,0 +1,33 @@
+---
+trigger: none
+ 
+pr: none
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # This variable controls the scope of the deployment.
+  # IMPORTANT: Change this to correspond to the relevant part of the codebase for this pipeline.
+- name: tf-execution-dir
+  value: terraform/sandbox
+  # This variable controls the version of Terraform that the pipeline will use.
+- name: tfversion
+  value: 1.1.5
+  # This variable group is *not* created in this pipeline file (it's created via the Azure DevOps UI)
+- group: key-vault-sandbox
+
+# This pipeline runs as part of the build validation checks for each Pull Request, so it only has one stage.
+# The configuration of this stage is defined in the relevant 'template' file (see below for the path)
+stages:  
+  - stage: Validate
+    displayName: Validate
+    jobs:
+      - job: Validate
+        steps:
+              - template: templates/terraform-validate.yaml
+                parameters:
+                  tfexecutiondir: $(tf-execution-dir)
+                  tfversion: $(tfversion)
+                  workingdir: $(tf-execution-dir)

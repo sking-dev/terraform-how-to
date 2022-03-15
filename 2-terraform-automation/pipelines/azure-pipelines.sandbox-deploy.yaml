@@ -1,0 +1,60 @@
+---
+trigger:
+    branches:
+        # This is the CI trigger for the relevant branch in the remote repository.
+        include:
+            - main
+    paths:
+        # Restrict the CI trigger to a particular part of the codebase.
+        # IMPORTANT: Change this to correspond to the relevant part of the codebase for this pipeline.
+        include: 
+            - terraform/sandbox
+ 
+pr: none
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # This variable controls the version of Terraform that the pipeline will use.
+  # IMPORTANT: Change this to correspond to the relevant part of the codebase for this pipeline.
+- name: tf-execution-dir
+  value: terraform/sandbox
+  # This variable controls the version of Terraform that the pipeline will use.
+- name: tfversion
+  value: 1.1.5
+  # This variable group is *not* created in this pipeline file (it's created via the Azure DevOps UI)
+- group: key-vault-sandbox 
+  
+stages:  
+  - stage: Plan
+    displayName: Plan
+    jobs:
+      - job: Plan
+        steps:
+              - template: templates/terraform-plan.yaml
+                parameters:
+                  tfexecutiondir: $(tf-execution-dir)
+                  tfversion: $(tfversion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+
+  - stage: Apply
+    displayName: 'Apply'
+    jobs:
+    - deployment: ApplySandbox
+      displayName: 'Deploy to Sandbox Environment'
+      # Run this stage *if* the previous stage succeeded *and* the build reason is *not* a Pull Request.
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      # This environment is *not* created in this pipeline file (it's created via the Azure DevOps UI)
+      environment: 'SandboxEnvironment'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: none
+            - template: templates/terraform-apply.yaml
+              parameters:
+                tfexecutiondir: $(tf-execution-dir)
+                tfversion: $(tfversion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)

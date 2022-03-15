@@ -118,28 +118,31 @@ Pending.
 
 We'll start off with a "v1" approach to the YAML pipelines where we incorporate all of the stages - basically, build and release - into a single YAML pipeline file.
 
-Here's an example of what [a "v1" YAML pipeline file](azure-pipelines.sandbox-deploy-v1.yml) looks like.
+Here's an example of what [a "v1" YAML multi-stage pipeline file](azure-pipelines.sandbox-deploy-v1.yml) looks like.
 
-Please note, this example has a few rough edges as per below.
+Please note, this example has a few rough edges which will be smoothed off in "v2" as per below.
 
-### Improvements to YAML Pipeline
+### Improvements to Multi-stage YAML Pipeline
 
-In v2 of multi-stage pipeline, incorporate the following enhancements.
+In "v2" of our multi-stage YAML deployment pipeline, we're incorporating the following enhancements.
 
-- Streamline Terraform build archive
-  - Pipeline cache versus file archive (see below)
-- Adopt modular design
-  - Use pipeline templates
+- Streamline the Terraform build archive
+  - Use **pipeline cache** versus the file archive approach (see below)
+- Adopt a modular design
+  - Use pipeline templates in the following directory structure
     - /pipelines
     - /pipelines/templates
-- Naming conventions
-  - Better readability for UI interaction
+- Review the internal naming conventions
+  - Aim for easily understandable display names
+    - Especially for user interaction via the Azure Pipelines UI
+
+Here's an example of what [a "v2" templated YAML multi-stage pipeline file](pipelines/azure-pipelines.sandbox-validate.yaml) looks like.
+
+Please note, the link above is to the validation pipeline which is intended to be run as part of build validation checks for each Pull Request in the GitOps workflow.  To see the actual deployment pipeline, [click here](pipelines/azure-pipelines.sandbox-deploy.yaml) or look in the same directory as the validation pipeline file.
 
 ### Pipeline Caching
 
-Pending.
-
-Check out the following links.
+See the following links for more details on this concept.
 
 - <https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/utility/cache?view=azure-devops>
 - <https://docs.microsoft.com/en-us/azure/devops/pipelines/release/caching?view=azure-devops>

@@ -1,0 +1,23 @@
+---
+parameters:
+    # The values are sourced from parameters defined in the calling (main) pipeline file.
+    tfexecutiondir: ''
+    tfversion: ''
+    workingdir: ''
+
+steps:
+- task: Cache@2
+  displayName: 'Retrieve Cache for Terraform Artifact'
+  inputs:
+    key: terraform | $(Agent.OS) | "$(Build.BuildNumber)" | $(Build.SourceVersion) | "${{ parameters.tfexecutiondir }}"
+    path: ${{ parameters.tfexecutiondir }}
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+  displayName: 'Install Terraform ${{ parameters.tfversion }}'
+  inputs:
+    terraformVersion: $(tfversion)
+
+- script: |
+    terraform apply -auto-approve -input=false tfplan
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Terraform Apply'

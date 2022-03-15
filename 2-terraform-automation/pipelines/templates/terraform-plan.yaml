@@ -1,0 +1,33 @@
+---
+parameters:
+    # The values are sourced from parameters defined in each main pipeline file.
+    tfexecutiondir: ''
+    tfversion: ''
+    workingdir: ''
+
+steps:
+- task: Cache@2
+  displayName: 'Register Cache for Terraform Artifact'
+  inputs:
+    key: terraform | $(Agent.OS) | "$(Build.BuildNumber)" | $(Build.SourceVersion) | "${{ parameters.tfexecutiondir }}"
+    path: ${{ parameters.tfexecutiondir }}
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+  displayName: 'Install Terraform ${{ parameters.tfversion }}'
+  inputs:
+    terraformVersion: ${{ parameters.tfversion }}
+
+- script: |
+    terraform init -backend-config="access_key=$(sandbox-tfstate-key1)"
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Terraform Init'
+
+- script: |
+    terraform validate
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Terraform Validate'
+
+- script: |
+    terraform plan -input=false -out=tfplan -var="spn-client-id=$(sandbox-spn-client-id)" -var="spn-client-secret=$(sandbox-spn-secret)" -var="spn-tenant-id=$(sandbox-spn-tenant-id)" -var="tfstate-key1=$(sandbox-tfstate-key1)" -var-file="/home/vsts/work/1/s/terraform/sandbox/terraform.tfvars"
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Terraform Plan'
