@@ -14,6 +14,8 @@ As an IaC engineer, I'd like to make my GitOps workflow robust and scalable as p
 
 Using **feature branches** (AKA "topic branches") will lead to smaller, shorter-lived units of work, which are focused on explicit areas of the codebase, so the team should be able to commit and merge to 'master' (AKA 'main') more frequently.
 
+#### Make Small Changes
+
 More frequent commits will improve the chances of avoiding merge conflicts.  That is, in comparison to a long(er) lived branch that will have a greater quantity of commits over a longer period of time.  Both of these factors - increased time and scope - increase the chances of commits that impact on multiple areas of the codebase and thus code that's being modified elsewhere.
 
 Each feature branch should begin its life as an up-to-date working copy of the master branch.
@@ -26,7 +28,13 @@ git checkout -b my-feature-branch # The name of the branch will depend on the na
 
 Each feature branch should be as short-lived as possible, so that it generates a small(er) number of commits to merge.
 
-However, "best laid plans" and all that...  There will at some point be feature branches that, for whatever reason, live for longer than is strictly desirable.  In this case, it's best practice to update your local feature branch with any changes to master that have happened since you created your branch.
+#### Update Often
+
+However, "best laid plans" and all that...  
+
+There will at some point be feature branches that, for whatever reason, live for longer than is strictly desirable.  In this case, it's best practice to update your local feature branch with any changes to master that have happened since you created your branch.
+
+This is especially true **immediately before pushing** your change(s) as a way of avoiding merge conflicts.
 
 ```bash
 git branch # Confirm you're still on your feature branch
@@ -92,6 +100,8 @@ See the following links for some additional background / discussion.
 
 ### Make Use of Pre-commit Hooks
 
+#### Verify Code Before Pushing to Repo
+
 _Can we use pre-commit hooks to detect / prevent a commit that's going to lead to a merge conflict?_
 
 The 'check-merge-conflict' hook looks like it could help on this front but, after some testing, I'm not convinced of its utility.
@@ -123,7 +133,11 @@ Other resources:
 - <https://stackoverflow.com/questions/24213948/prevent-file-with-merge-conflicts-from-getting-committed-in-git>
 - <https://www.elliotjordan.com/posts/pre-commit-01-intro/>
 
-### Ensure Strong Communication
+### Promote a Good Team Spirit
+
+All members of the team should follow the agreed conventions and workflow.
+
+#### Ensure Strong Communication
 
 Facilitate visibility of what each team member is working on e.g. make use of Azure Boards, including integration with Microsoft Teams.
 
