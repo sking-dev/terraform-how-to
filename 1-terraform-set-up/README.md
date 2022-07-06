@@ -20,4 +20,12 @@ Check out [this guide what I wrote](Run-Multiple-Terraform-Versions-Windows.md) 
 
 Here's a step-by-step [guide to upgrading Terraform and provider versions](Upgrade-Terraform-Codebase.md) in existing code.
 
+### How to Upgrade Provider Version in a Terraform Module
+
+[Upgrade the 'azurerm' provider version used by Terraform modules](Upgrade-Terraform-Modules-Provider.md) in existing code.
+
+----
+
+TODO: Make this into a proper / better contents page.
+
 ----
