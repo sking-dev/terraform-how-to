@@ -16,6 +16,14 @@ Take a look at this [WIP guide](Set-Up-GitOps-CI-CD-Pipeline.md) to see where I'
 
 ----
 
+## How to Set Up a CI/CD Pipeline for PaaS Deployments
+
+As a cloud engineer, I'd like to extend my GitOps pipeline approach to handle deployments for PaaS-based projects.
+
+Take a look at this [WIP guide](Set-Up-PaaS-CI-CD-Pipeline.md) to see where I've got to so far.
+
+----
+
 ## How to Handle Merge Conflicts in a GitOps Workflow
 
 As an IaC engineer, I'd like to make my GitOps workflow robust and scalable as possible by preventing merge conflicts or, when they do occur, by resolving them in a quick and efficient manner.
