@@ -28,4 +28,12 @@ Take a look at this [WIP guide](Set-Up-PaaS-CI-CD-Pipeline.md) to see where I've
 
 As an IaC engineer, I'd like to make my GitOps workflow robust and scalable as possible by preventing merge conflicts or, when they do occur, by resolving them in a quick and efficient manner.
 
-Check out [my somewhat subjective guide here](Handle-Merge-Conflicts-GitOps-Workflow.md).
+Check out my [somewhat subjective guide here](Handle-Merge-Conflicts-GitOps-Workflow.md).
+
+----
+
+## How to Incorporate Security Scanning into an IaC Deployment Pipeline
+
+As an IaC engineer, I'd like to scan my Terraform code for any security misconfiguration issues and risks prior to merging and deploying any changes to my live environments.
+
+Feast your eyes on my [evaluation and configuration notes here](Set-Up-Security-Scanning-IaC-Pipeline.md).
