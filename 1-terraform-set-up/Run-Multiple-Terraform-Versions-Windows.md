@@ -16,7 +16,7 @@ tfenv is a version manager for Terraform that has a good reputation amongst Linu
 
 To work around this, I'm going to make use of WSL under Windows 10.
 
-### Install Windows Subsystem for Linux
+### Install Windows Subsystem for Linux on Windows 10
 
 To install Terraform directly within WSL and interact with it via Visual Studio Code, reference the article below.
   
@@ -33,9 +33,74 @@ NOTE: There's no need to follow this article 100%.  Just focus on the following 
   - <https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt&view=azure-cli-latest>
 - 6 - Login to Azure subscription via Azure CLI
 
+### Install Windows Subsystem for Linux on Windows 11
+
+Well, time and operating systems move on, so here's the link for how to install WSL on a Windows 11 system.
+
+<https://learn.microsoft.com/en-us/windows/wsl/install>
+
+Alas, the "one stop shop command" approach didn't work for me and I spent quite a bit of time troubleshooting (see below)
+
+Here's my summary of the steps to take and my notes are inline.
+
+- 1 - Install Visual Studio Code
+- 2 - Start a PowerShell terminal
+- 3 - Check which Ubuntu distros are available
+  - `wsl --list --online`
+- 4 - Install the required distro
+  - I'm choosing Ubuntu 22.04 LTS
+    - `wsl --install -d Ubuntu-22.04`
+- 5 - Reboot the system
+
+```plaintext
+PS D:> wsl --install -d Ubuntu-22.04
+Installing: Virtual Machine Platform
+Virtual Machine Platform has been installed.
+Installing: Windows Subsystem for Linux
+Windows Subsystem for Linux has been installed.
+Installing: Ubuntu 22.04 LTS
+Ubuntu 22.04 LTS has been installed.
+The requested operation is successful. Changes will not be effective until the system is rebooted.
+```
+
+- 6 - Resolve _WslRegisterDistribution failed with error: 0x80370109_
+  - _Error: 0x80370109 The operation timed out because a response was not received from the virtual machine or container._
+    - Tried many suggestions from various forum threads but this is the command that (eventually..!) got it working for me
+      - `wsl --update --pre-release`
+        - I also removed the original distro installed in step 4 (see above)
+          - `wsl --unregister -d Ubuntu-22.04`
+- 7 - Enable Virtual Machine Platform in Windows Features
+  - This feature is required to support WSL 2
+    - Restart the system after the feature's been installed (when prompted)
+- 8 - Confirm WSL 2 is set as the default version
+  - `wsl --status`
+    - Should see, _Default Version: 2_
+- 9 - Install the default distro which is called "Ubuntu" and, luckily for my use case, is 22.04 LTS
+  - `wsl --install`
+- 10 - Specify the username and pass word to use in the Ubuntu distro
+  - They don't have to match up with your Windows credentials but makes life a bit easier if they do..!
+- 11 - Confirm your distro is up-and-running
+  - `wsl --list -v`
+
+```plaintext
+PS E:\> wsl --list -v
+  NAME      STATE           VERSION
+* Ubuntu    Running         2
+```
+
+- 12 - Update your Ubuntu distro with the latest available updates
+  - `sudo apt update`
+  - `sudo apt upgrade`
+- 13 - Install the "WSL" extension in Visual Studio Code
+- 14 - Install the "HashiCorp Terraform" extension in Visual Studio Code
+- 15 - Install Azure CLI on Ubuntu distro
+  - <https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=apt&view=azure-cli-latest>
+    - I chose the "step-by-step installation" approach
+- 16 - Login to Azure subscription via Azure CLI
+
 ----
 
-### Troubleshooting the WSL Installation
+### Troubleshooting the WSL Installation on Windows 10
 
 #### Not Able to Connect to Microsoft Store
 
@@ -103,6 +168,12 @@ Here's a summary for easier reference.
 - Verify installation
   - `tfenv` (returns version number plus available commands)
     - Or `tfenv -v` (returns just version number)
+
+```plaintext
+UPDATE: 
+
+These instructions are valid for installing tfenv on Ubuntu 22.04 LTS running in WSL on Windows 11 (tested 2023-11-02)
+``````
 
 ----
 
