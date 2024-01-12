@@ -1,0 +1,62 @@
+---
+parameters:
+- name: terraformExecutionDir
+  type: string
+  default: ''
+  
+- name: terraformVersion
+  type: string
+  default: ''
+
+- name: workingDir
+  type: string
+  default: ''
+
+- name: terraformStateResourceGroup
+  type: string
+
+- name: terraformStateStorageAccount
+  type: string
+
+- name: terraformStateContainer
+  type: string
+  default: terraform-state   # Value supplied here so *not* declared in calling pipeline file
+
+- name: terraformStateKey
+  type: string
+  default: '' # Value supplied in calling pipeline file (retrieved from environment-specific library group)
+
+steps:
+- task: ExtractFiles@1
+  displayName: 'Extract plan artifact'
+  inputs:
+    archiveFilePatterns: '$(Pipeline.Workspace)/$(Build.BuildId)-tfplan/$(Build.BuildId).tgz'
+    destinationFolder: '${{ parameters.terraformExecutionDir }}'
+    cleanDestinationFolder: true
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+  displayName: 'Install Terraform ${{ parameters.terraformVersion }}'
+  inputs:
+    terraformVersion: $(terraformVersion)
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform init'
+  inputs:
+    command: init
+    backendType: azurerm
+    backendServiceArm: 'Name_of_service_connection_goes_here'
+    backendAzureRmResourceGroupName: '${{ parameters.terraformStateResourceGroup }}'
+    backendAzureRmStorageAccountName: '${{ parameters.terraformStateStorageAccount }}'
+    backendAzureRmContainerName: '${{ parameters.terraformStateContainer }}'
+    backendAzureRmKey: '${{ parameters.terraformStateKey }}'
+    workingDirectory: '${{ parameters.workingDir }}'
+    allowTelemetryCollection: false    
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform apply'
+  inputs:
+    command: apply
+    environmentServiceName: 'Name_of_service_connection_goes_here'
+    commandOptions: '-auto-approve -compact-warnings -input=false -no-color -parallelism=30 terraform.tfplan'
+    workingDirectory: ${{ parameters.workingDir }}
+    allowTelemetryCollection: false

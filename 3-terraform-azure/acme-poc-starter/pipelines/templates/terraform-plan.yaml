@@ -1,0 +1,86 @@
+---
+parameters:
+- name: tfGlobalVarsFile
+  type: string
+  default: /home/vsts/work/1/s/terraform/terraform.tfvars
+
+- name: terraformExecutionDir
+  type: string
+  default: ''
+  
+- name: terraformVersion
+  type: string
+  default: ''
+
+- name: workingDir
+  type: string
+  default: ''
+
+- name: terraformStateResourceGroup
+  type: string
+
+- name: terraformStateStorageAccount
+
+  type: string
+- name: terraformStateContainer
+
+  type: string  
+  default: terraform-state   # Value supplied here so *not* declared in calling pipeline file
+
+- name: terraformStateKey
+  type: string
+  default: '' # Value supplied in calling pipeline file (retrieved from environment-specific library group)
+
+- name: terraformEnvironmentVariablesFile
+  type: string
+  default: ''
+
+steps:
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+  displayName: 'Install Terraform ${{ parameters.terraformVersion }}'
+  inputs:
+    terraformVersion: ${{ parameters.terraformVersion }}
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform init'
+  inputs:
+    command: init
+    backendType: azurerm
+    backendServiceArm: 'Name_of_service_connection_goes_here'
+    backendAzureRmResourceGroupName: '${{ parameters.terraformStateResourceGroup }}'
+    backendAzureRmStorageAccountName: '${{ parameters.terraformStateStorageAccount }}'
+    backendAzureRmContainerName: '${{ parameters.terraformStateContainer }}'
+    backendAzureRmKey: '${{ parameters.terraformStateKey }}'
+    workingDirectory: ${{ parameters.workingDir }}
+    allowTelemetryCollection: false
+
+- script: |
+    terraform validate
+  workingDirectory: ${{ parameters.workingDir }}
+  displayName: 'Run terraform validate'
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform plan'
+  inputs:
+    command: plan
+    environmentServiceName: 'Name_of_service_connection_goes_here'
+    commandOptions: '-compact-warnings -input=false -no-color -out=terraform.tfplan -var-file=${{ parameters.terraformEnvironmentVariablesFile }} -var-file=${{ parameters.tfGlobalVarsFile }}'
+    workingDirectory: ${{ parameters.workingDir }}
+    allowTelemetryCollection: false
+
+- task: ArchiveFiles@2
+  displayName: 'Create plan artifact'
+  inputs:
+    rootFolderOrFile: '${{ parameters.terraformExecutionDir }}'
+    includeRootFolder: false
+    archiveType: 'tar'
+    tarCompression: 'gz'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).tgz'
+    replaceExistingArchive: true
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish plan artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: '$(Build.BuildId)-tfplan'
+    publishLocation: 'Container'

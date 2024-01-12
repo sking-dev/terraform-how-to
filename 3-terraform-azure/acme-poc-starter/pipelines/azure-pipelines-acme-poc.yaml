@@ -1,0 +1,117 @@
+---
+trigger: none
+
+pr: none
+
+# TODO: Add schedule configuration.
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+variables:
+# Azure Pipelines library group (backed by an Azure Key Vault instance)
+- group: name-of-library-group-goes-here
+
+# IMPORTANT: Ensure this value corresponds to the module for this pipeline.
+- name: terraformExecutionDir
+  value: acme-poc-starter/terraform
+
+- name: terraformVersion
+  value: 1.6.6
+
+stages:
+  - stage: Validate_All_Env
+    displayName: 'Validate_All_Env'
+    jobs:
+      - job: Validate
+        displayName: 'Validate'
+        steps:
+              - template: ../../pipelines/templates/terraform-validate.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+
+  - stage: Plan_NPR
+    displayName: 'Plan_NPR'
+    dependsOn: ['Validate_All_Env']
+    variables: 
+    - group: name-of-npr-library-group-goes-here # Azure Pipelines Library group for NPR environment
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        steps:
+              - template: ../../pipelines/templates/terraform-plan.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)
+                  # The value for this variable is supplied from the environment's library group in Azure Pipelines.
+                  terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+
+  - stage: Apply_NPR
+    displayName: 'Apply_NPR'
+    dependsOn: ['Plan_NPR']
+    variables: 
+    - group: name-of-npr-library-group-goes-here # Azure Pipelines Library group for NPR environment
+    jobs:
+    - deployment: Apply
+      displayName: 'Apply'
+      environment: ACME-POC-NPR
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: ../../pipelines/templates/terraform-apply.yaml
+              parameters:
+                terraformExecutionDir: $(terraformExecutionDir)
+                terraformVersion: $(terraformVersion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                terraformStateResourceGroup: $(terraformStateResourceGroup)
+                terraformStateStorageAccount: $(terraformStateStorageAccount)
+                terraformStateKey: $(terraformStateKey)                             
+
+  - stage: Plan_LIV
+    displayName: 'Plan_LIV'
+    dependsOn: ['Apply_NPR']
+    variables: 
+    - group: name-of-liv-library-group-goes-here # Azure Pipelines Library group for LIV environment
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        steps:
+              - template: ../../pipelines/templates/terraform-plan.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)
+                  terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+
+  - stage: Apply_LIV
+    displayName: 'Apply_LIV'
+    dependsOn: ['Plan_LIV']
+    variables: 
+    - group: name-of-liv-library-group-goes-here # Azure Pipelines Library group for LIV environment
+    jobs:
+    - deployment: Apply
+      displayName: 'Apply'
+      environment: ACME-POC-LIV
+      strategy:
+        runOnce:
+          deploy:
+            steps:            
+            - template: ../../pipelines/templates/terraform-apply.yaml
+              parameters:
+                terraformExecutionDir: $(terraformExecutionDir)
+                terraformVersion: $(terraformVersion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                terraformStateResourceGroup: $(terraformStateResourceGroup)
+                terraformStateStorageAccount: $(terraformStateStorageAccount)
+                terraformStateKey: $(terraformStateKey)
