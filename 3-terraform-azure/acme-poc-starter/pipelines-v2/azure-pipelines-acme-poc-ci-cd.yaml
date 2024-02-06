@@ -1,0 +1,218 @@
+---
+trigger:
+    branches:
+        include:
+            - main
+    paths:
+        include: 
+            - acme-poc-starter/terraform
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+variables:
+- name: isPR
+  value: $[eq(variables['Build.Reason'], 'PullRequest')]
+
+- name: isMainBranch
+  value: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+# Azure Pipelines library group (backed by Key Vault)
+- group: name-of-library-group-goes-here
+
+# IMPORTANT: Ensure this value corresponds to the module for this pipeline.
+- name: terraformExecutionDir
+  value: acme-poc-starter/terraform
+
+- name: terraformVersion
+  value: 1.7.1
+
+stages:
+  - stage: Validate_All_Env
+    displayName: 'Validate_All_Env'
+    condition: eq(variables.isPR, true)
+    jobs:
+      - job: Validate
+        displayName: 'Validate'
+        steps:
+              - template: ../../pipelines/templates/terraform-validate.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+
+  - stage: Plan_DEV
+    displayName: 'Plan_DEV'
+    dependsOn: ['Validate_All_Env']
+    # Run this stage *if* the previous stage succeeded *and* the build reason is a Pull Request.
+    condition: and(succeeded(), eq(variables.isPR, true))
+    variables: 
+    - group: name-of-dev-library-group-goes-here # Azure Pipelines Library group for DEV environment
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        steps:
+              - template: ../../pipelines/templates/terraform-plan.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)
+                  # The value for this variable is supplied from the environment's library group in Azure Pipelines.
+                  terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+
+  - stage: Apply_DEV
+    displayName: 'Apply_DEV'
+    dependsOn: ['Plan_DEV']
+    # Run this stage *if* the previous stage succeeded *and* the build reason is a Pull Request.
+    condition: and(succeeded(), eq(variables.isPR, true))
+    variables: 
+    - group: name-of-dev-library-group-goes-here # Azure Pipelines Library group for DEV environment
+    jobs:
+    - deployment: Apply
+      displayName: 'Apply'
+      environment: ACME-POC-DEV
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: ../../pipelines/templates/terraform-apply.yaml
+              parameters:
+                terraformExecutionDir: $(terraformExecutionDir)
+                terraformVersion: $(terraformVersion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                terraformStateResourceGroup: $(terraformStateResourceGroup)
+                terraformStateStorageAccount: $(terraformStateStorageAccount)
+                terraformStateKey: $(terraformStateKey)                             
+
+  - stage: Plan_SIT
+    displayName: 'Plan_SIT'
+    dependsOn: ['Apply_DEV']
+    condition: and(not(failed()), not(canceled()), eq(variables.isMainBranch, true))
+    variables: 
+    - group: name-of-sit-library-group-goes-here # Azure Pipelines Library group for SIT environment
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        steps:
+              - template: ../../pipelines/templates/terraform-plan.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)
+                  terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+
+  - stage: Apply_SIT
+    displayName: 'Apply_SIT'
+    dependsOn: ['Plan_SIT']
+    condition: and(not(failed()), not(canceled()), eq(variables.isMainBranch, true))
+    variables: 
+    - group: name-of-sit-library-group-goes-here # Azure Pipelines Library group for SIT environment
+    jobs:
+    - deployment: Apply
+      displayName: 'Apply'
+      environment: ACME-POC-SIT
+      strategy:
+        runOnce:
+          deploy:
+            steps:            
+            - template: ../../pipelines/templates/terraform-apply.yaml
+              parameters:
+                terraformExecutionDir: $(terraformExecutionDir)
+                terraformVersion: $(terraformVersion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                terraformStateResourceGroup: $(terraformStateResourceGroup)
+                terraformStateStorageAccount: $(terraformStateStorageAccount)
+                terraformStateKey: $(terraformStateKey)
+
+  - stage: Plan_UAT
+    displayName: 'Plan_UAT'
+    dependsOn: ['Apply_SIT']
+    condition: and(not(failed()), not(canceled()), eq(variables.isMainBranch, true))
+    variables: 
+    - group: name-of-uat-library-group-goes-here # Azure Pipelines Library group for UAT environment
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        steps:
+              - template: ../../pipelines/templates/terraform-plan.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)
+                  terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+
+  - stage: Apply_UAT
+    displayName: 'Apply_UAT'
+    dependsOn: ['Plan_UAT']
+    condition: and(not(failed()), not(canceled()), eq(variables.isMainBranch, true))
+    variables: 
+    - group: name-of-uat-library-group-goes-here # Azure Pipelines Library group for UAT environment
+    jobs:
+    - deployment: Apply
+      displayName: 'Apply'
+      environment: ACME-POC-UAT
+      strategy:
+        runOnce:
+          deploy:
+            steps:            
+            - template: ../../pipelines/templates/terraform-apply.yaml
+              parameters:
+                terraformExecutionDir: $(terraformExecutionDir)
+                terraformVersion: $(terraformVersion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                terraformStateResourceGroup: $(terraformStateResourceGroup)
+                terraformStateStorageAccount: $(terraformStateStorageAccount)
+                terraformStateKey: $(terraformStateKey)
+
+  - stage: Plan_LIV
+    displayName: 'Plan_LIV'
+    dependsOn: ['Apply_UAT']
+    condition: and(not(failed()), not(canceled()), eq(variables.isMainBranch, true))
+    variables: 
+    - group: name-of-liv-library-group-goes-here # Azure Pipelines Library group for LIV environment
+    jobs:
+      - job: Plan
+        displayName: 'Plan'
+        steps:
+              - template: ../../pipelines/templates/terraform-plan.yaml
+                parameters:
+                  terraformExecutionDir: $(terraformExecutionDir)
+                  terraformVersion: $(terraformVersion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)
+                  terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+
+  - stage: Apply_LIV
+    displayName: 'Apply_LIV'
+    dependsOn: ['Plan_LIV']
+    condition: and(not(failed()), not(canceled()), eq(variables.isMainBranch, true))
+    variables: 
+    - group: name-of-liv-library-group-goes-here # Azure Pipelines Library group for LIV environment
+    jobs:
+    - deployment: Apply
+      displayName: 'Apply'
+      environment: ACME-POC-LIV
+      strategy:
+        runOnce:
+          deploy:
+            steps:            
+            - template: ../../pipelines/templates/terraform-apply.yaml
+              parameters:
+                terraformExecutionDir: $(terraformExecutionDir)
+                terraformVersion: $(terraformVersion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(terraformExecutionDir)
+                terraformStateResourceGroup: $(terraformStateResourceGroup)
+                terraformStateStorageAccount: $(terraformStateStorageAccount)
+                terraformStateKey: $(terraformStateKey)

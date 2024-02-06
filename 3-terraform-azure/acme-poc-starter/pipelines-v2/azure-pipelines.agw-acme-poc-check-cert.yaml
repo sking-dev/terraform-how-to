@@ -1,0 +1,103 @@
+---
+trigger: none
+
+pr: none
+
+resources:
+  pipelines:
+  - pipeline: 'acme-poc-scheduled-daily' # Name of this pipeline resource (as it appears in AzDO UI)
+    source: 'agw-acme-poc-check-cert' # Name of the pipeline (as it appears in AzDO UI) referenced by this pipeline resource
+    trigger: 
+      branches:
+        include: 
+        - main
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+parameters:
+- name: target
+  displayName: Target AGW SKU Version
+  type: string
+  # Set default to "V2" as the ACME POC ocurrently services V2 SKU AGW instances only.
+  default: V2
+  values:
+  - Both
+  - V1
+  - V2
+
+variables:
+# Azure Pipelines library group backed by Key Vault.
+- group: name-of-library-group-goes-here
+
+# IMPORTANT: Ensure this value corresponds to the module for this pipeline.
+- name: terraformStateKey
+  value: name-of-terraform-state-file-goes-here
+
+# IMPORTANT: Ensure this value corresponds to the module for this pipeline.
+- name: tf-execution-dir
+  value: name-of-directory-for-agw-module
+  
+- name: tfversion
+  value: 1.7.1
+  
+stages:  
+  - stage: Plan
+    displayName: Plan
+    jobs:
+    - ${{ if eq(parameters.target, 'Both') }}:
+      - job: Plan
+        steps:
+              - template: templates/terraform-plan.yaml
+                parameters:
+                  tfexecutiondir: $(tf-execution-dir)
+                  tfversion: $(tfversion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)    
+    - ${{ if eq(parameters.target, 'V1') }}:
+      - job: Plan
+        steps:
+              - template: templates/terraform-plan-target.yaml
+                parameters:
+                  tfexecutiondir: $(tf-execution-dir)
+                  tfversion: $(tfversion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)    
+                  target: 'module.name-of-module-for-v1-sku-agw'
+    - ${{ if eq(parameters.target, 'V2') }}:
+      - job: Plan
+        steps:
+              - template: templates/terraform-plan-target.yaml
+                parameters:
+                  tfexecutiondir: $(tf-execution-dir)
+                  tfversion: $(tfversion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                  terraformStateResourceGroup: $(terraformStateResourceGroup)
+                  terraformStateStorageAccount: $(terraformStateStorageAccount)
+                  terraformStateKey: $(terraformStateKey)    
+                  target: 'module.name-of-module-for-v2-sku-agw'
+
+  - stage: Apply
+    displayName: 'Apply'
+    # Skip this stage if the preceding stage's 'terraform plan' output is "no changes".
+    condition: eq(dependencies.Plan.outputs['Plan.Plan.TerraformPlan.changesPresent'], 'true')
+    jobs:
+      - job:
+      - deployment: name-of-deployment-goes-here
+        displayName: 'Display name goes here'
+        environment: 'name-of-azure-pipelines-environment-goes-here'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: none
+              - template: templates/terraform-apply.yaml
+                parameters:
+                  tfexecutiondir: $(tf-execution-dir)
+                  tfversion: $(tfversion)
+                  workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
