@@ -26,7 +26,9 @@ See `/terraform` directory.
 
 ### Pipeline Code
 
-See `/pipelines` directory.
+See the `/pipelines` directory for the initial YAML pipeline files.
+
+See the `/pipelines-v2` directory for the updated versions.
 
 ## Acknowledgements
 
