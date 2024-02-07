@@ -1,0 +1,104 @@
+---
+trigger: none
+ 
+pr: none
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+# Define runtime parameter so deployment environment can be selected on manual run of pipeline.
+parameters:
+- name: target
+  displayName: 'Target Deployment Environment'
+  type: string
+  default: dev
+  values:
+  - dev
+  - sit
+  - qau
+  - liv
+
+variables:
+# Azure Pipelines library group for Terraform authentication & state secrets (backed by Key Vault)
+- group: name-of-library-group-goes-here
+
+# IMPORTANT: Ensure the value corresponds to the module for this pipeline.
+- name: tf-execution-dir
+  value: terraform/name-of-module-directory-goes-here
+  
+- name: tfversion
+  value: 1.7.1
+
+stages:  
+  - stage: Validate
+    displayName: 'Validate'
+    jobs:
+      - ${{ if eq(parameters.target, 'dev') }}:
+        - job: Validate
+          displayName: 'Validate DEV'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-dev-library-group-goes-here
+          steps:
+                - template: templates/terraform-validate-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+      - ${{ if eq(parameters.target, 'sit') }}:
+        - job: Validate
+          displayName: 'Validate SIT'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-sit-library-group-goes-here
+          steps:
+                - template: templates/terraform-validate-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+      - ${{ if eq(parameters.target, 'qau') }}:
+        - job: Validate
+          displayName: 'Validate QAU'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-qau-library-group-goes-here
+          steps:
+                - template: templates/terraform-validate-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+      - ${{ if eq(parameters.target, 'liv') }}:
+        - job: Validate
+          displayName: 'Validate LIV'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-liv-library-group-goes-here
+          steps:
+                - template: templates/terraform-validate-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true

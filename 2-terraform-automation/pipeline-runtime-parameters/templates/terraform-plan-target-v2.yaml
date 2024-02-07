@@ -1,0 +1,95 @@
+---
+parameters:
+- name: tfGlobalVarsFile
+  type: string
+  default: /home/vsts/work/1/s/terraform/terraform.tfvars
+
+- name: tfexecutiondir
+  type: string
+  default: ''
+  
+- name: tfversion
+  type: string
+  default: ''
+
+- name: workingdir
+  type: string
+  default: ''
+
+- name: target
+  type: string
+  default: ''
+
+- name: terraformStateResourceGroup
+  type: string
+- name: terraformStateStorageAccount
+  type: string
+  # Value (default) supplied here so *not* declared in pipeline file.
+- name: terraformStateContainer
+  type: string  
+  default: terraform-state
+  # Value supplied in calling pipeline file.
+  # Why?  It's different for each module so can't be supplied via the library variable group.
+- name: terraformStateKey
+  type: string
+  default: ''
+
+  # Required by Terraform modules that deploy to multiple environments.
+- name: isMultipleEnvironments
+  type: boolean
+  default: false
+- name: terraformEnvironmentVariablesFile
+  type: string
+  default: ''
+
+steps:
+- task: Cache@2
+  displayName: 'Register Cache for Terraform Artifact'
+  inputs:
+    key: terraform | $(Agent.OS) | "$(Build.BuildNumber)" | $(Build.SourceVersion) | "${{ parameters.tfexecutiondir }}"
+    path: ${{ parameters.tfexecutiondir }}
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+  displayName: 'Install Terraform ${{ parameters.tfversion }}'
+  inputs:
+    terraformVersion: ${{ parameters.tfversion }}
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform init'
+  inputs:
+    command: init
+    backendType: azurerm
+    backendServiceArm: 'name-of-service-connection-goes-here'
+    backendAzureRmResourceGroupName: '${{ parameters.terraformStateResourceGroup }}'
+    backendAzureRmStorageAccountName: '${{ parameters.terraformStateStorageAccount }}'
+    backendAzureRmContainerName: '${{ parameters.terraformStateContainer }}'
+    backendAzureRmKey: '${{ parameters.terraformStateKey }}'
+    workingDirectory: ${{ parameters.workingdir }}
+    allowTelemetryCollection: false
+
+- script: |
+    terraform validate
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Run terraform validate'
+
+# NOTE: Original version for single environment pipelines.
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform plan (SE)'
+  condition: eq('${{ parameters.isMultipleEnvironments }}', 'false')
+  inputs:
+    command: plan
+    environmentServiceName: 'name-of-service-connection-goes-here'
+    allowTelemetryCollection: false
+    commandOptions: '-compact-warnings -input=false -no-color -out=tfplan -var-file=${{ parameters.tfGlobalVarsFile }}'
+    workingDirectory: ${{ parameters.workingdir }}
+
+# NOTE: New version for multi-environment pipelines.
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform plan (ME)'  
+  condition: ne('${{ parameters.isMultipleEnvironments }}', 'false')
+  inputs:
+    command: plan
+    environmentServiceName: 'name-of-service-connection-goes-here'
+    allowTelemetryCollection: false
+    commandOptions: '-compact-warnings -input=false -no-color -out=tfplan -var-file=${{ parameters.terraformEnvironmentVariablesFile }} -var-file=${{ parameters.tfGlobalVarsFile }}'
+    workingDirectory: ${{ parameters.workingdir }}

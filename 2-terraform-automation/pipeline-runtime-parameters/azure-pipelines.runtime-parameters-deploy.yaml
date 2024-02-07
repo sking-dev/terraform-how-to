@@ -1,0 +1,128 @@
+---
+trigger:
+    branches:
+        include:
+            - main
+    paths:
+        include: 
+            - terraform/name-of-module-directory-goes-here
+ 
+pr: none
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+
+parameters:
+- name: target
+  displayName: 'Target Deployment Environment'
+  type: string
+  default: dev
+  values:
+  - dev
+  - sit
+  - qau
+  - liv
+
+variables:
+# Azure Pipelines library group for Terraform authentication & state secrets (backed by Key Vault)
+- group: name-of-library-group-goes-here
+
+# IMPORTANT: Ensure the value corresponds to the module for this pipeline.
+- name: tf-execution-dir
+  value: terraform/name-of-module-directory-goes-here
+  
+- name: tfversion
+  value: 1.7.1
+  
+stages:
+  - stage: Plan
+    displayName: 'Plan'
+    jobs:
+      - ${{ if eq(parameters.target, 'dev') }}:
+        - job: Plan
+          displayName: 'Plan DEV'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-dev-library-group-goes-here
+          steps:
+                - template: templates/terraform-plan-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+      - ${{ if eq(parameters.target, 'sit') }}:
+        - job: Plan
+          displayName: 'Plan SIT'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-sit-library-group-goes-here
+          steps:
+                - template: templates/terraform-plan-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+      - ${{ if eq(parameters.target, 'qau') }}:
+        - job: Plan
+          displayName: 'Plan QAU'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-qau-library-group-goes-here
+          steps:
+                - template: templates/terraform-plan-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+      - ${{ if eq(parameters.target, 'liv') }}:
+        - job: Plan
+          displayName: 'Plan LIV'
+          variables:
+            # Azure Pipelines library group (not backed by Key Vault)
+            - group: name-of-liv-library-group-goes-here
+          steps:
+                - template: templates/terraform-plan-target-v2.yaml
+                  parameters:
+                    tfexecutiondir: $(tf-execution-dir)
+                    tfversion: $(tfversion)
+                    workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)
+                    terraformStateResourceGroup: $(terraformStateResourceGroup)
+                    terraformStateStorageAccount: $(terraformStateStorageAccount)
+                    terraformStateKey: $(terraformStateKey)
+                    terraformEnvironmentVariablesFile: $(terraformEnvironmentVariablesFile)
+                    isMultipleEnvironments: true
+
+  - stage: Apply
+    displayName: 'Apply'
+    jobs:
+    - deployment: Neme-of-deployment-goes-here
+      displayName: 'Display name goes here'
+      # Run this stage *if* the previous stage succeeded *and* the build reason is *not* a Pull Request.
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+      environment: 'name-of-environment-goes-here'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: none
+            - template: templates/terraform-apply-v2.yaml
+              parameters:
+                tfexecutiondir: $(tf-execution-dir)
+                tfversion: $(tfversion)
+                workingdir: $(System.DefaultWorkingDirectory)/$(tf-execution-dir)

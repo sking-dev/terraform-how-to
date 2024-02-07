@@ -1,0 +1,157 @@
+---
+parameters:
+- name: tfGlobalVarsFile
+  type: string
+  default: /home/vsts/work/1/s/terraform/terraform.tfvars
+
+- name: tfexecutiondir
+  type: string
+  default: ''
+
+- name: tfversion
+  type: string
+  default: ''
+
+- name: workingdir
+  type: string
+  default: ''
+
+- name: target
+  type: string
+  default: ''
+
+- name: terraformStateResourceGroup
+  type: string
+- name: terraformStateStorageAccount
+  type: string
+  # Value (default) supplied here so *not* declared in pipeline file.
+- name: terraformStateContainer
+  type: string  
+  default: terraform-state
+  # Value supplied in calling pipeline file.
+  # Why?  It's different for each module so can't be supplied via the library variable group.
+- name: terraformStateKey
+  type: string
+  default: ''
+
+# Required by Terraform modules that deploy to multiple environments.
+- name: isMultipleEnvironments
+  type: boolean
+  default: false
+- name: terraformEnvironmentVariablesFile
+  type: string
+  default: ''
+
+steps:
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@0
+  displayName: 'Install Terraform ${{ parameters.tfversion }}'
+  inputs:
+    terraformVersion: ${{ parameters.tfversion }}
+
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform init'
+  inputs:
+    command: init
+    backendType: azurerm
+    backendServiceArm: 'name-of-service-connection-goes-here'
+    backendAzureRmResourceGroupName: '${{ parameters.terraformStateResourceGroup }}'
+    backendAzureRmStorageAccountName: '${{ parameters.terraformStateStorageAccount }}'
+    backendAzureRmContainerName: '${{ parameters.terraformStateContainer }}'
+    backendAzureRmKey: '${{ parameters.terraformStateKey }}'
+    workingDirectory: ${{ parameters.workingdir }}
+    allowTelemetryCollection: false
+
+# Style convention check using 'terraform fmt'.
+- script: 'terraform fmt -check -diff -recursive -write=false'
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Run terraform fmt'
+
+- script: |
+    terraform validate
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Run terraform validate'
+
+# Linting check using *TFLint* static analysis tool for Terraform code.
+- script: |
+    echo '[sking-dev] Start TFLint run.'
+    echo '[sking-dev] Check working directory.'
+    pwd
+    echo '[sking-dev] Run Docker image.'
+    # Command to run Docker image with TFLint *and* ruleset plugins.
+    # Use '--force' argument to suppress error code on initial scan(s) of legacy code.
+    docker run --rm -v $(pwd):/data -t ghcr.io/terraform-linters/tflint-bundle --enable-plugin="azurerm" --force --module
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Run TFLint'
+
+# Security check using Trivy security scanner from Docker image.
+# Run twice: once to detect non-critical then again to detect critical.
+# TODO: Consider changing exit code to "1" on scan for critical.
+- script: |
+    echo '[sking-dev] Start Trivy security scan.'
+    echo '[sking-dev] Check working directory.'
+    pwd
+    echo '[sking-dev] Run Trivy Docker image to scan for non-critical issues.'
+    docker run --rm \
+    --volume $HOME/Library/Caches:/root/.cache/ \
+    --volume "$(pwd):/src" \
+    aquasec/trivy config \
+    --exit-code 0 \
+    --severity LOW,MEDIUM,HIGH \
+    --ignorefile /src/.trivyignore \
+    --format template --template "@contrib/junit.tpl" \
+    --output src/junit-report-non-critical.xml \
+    /src
+    echo '[sking-dev] Run Trivy Docker image to scan for critical issues.'
+    docker run --rm \
+    --volume $HOME/Library/Caches:/root/.cache/ \
+    --volume "$(pwd):/src" \
+    aquasec/trivy config \
+    --exit-code 0 \
+    --severity CRITICAL \
+    --ignorefile /src/.trivyignore \
+    --format template --template "@contrib/junit.tpl" \
+    --output src/junit-report-critical.xml \
+    /src
+  workingDirectory: ${{ parameters.workingdir }}
+  displayName: 'Run Trivy'
+  enabled: true
+
+# Publish Trivy scan results to "Tests" tab in Azure Pipelines run UI.
+# TODO: Consider changing 'failTask...' to "true" to highlight critical issues.
+- task: PublishTestResults@2
+  inputs:
+    testRunTitle: 'Trivy Scan Results'
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/junit-report-*.xml'
+    searchFolder: ${{ parameters.workingdir }}
+    failTaskOnFailedTests: false
+    mergeTestResults: true
+  displayName: 'Publish Trivy results'
+  enabled: true
+
+# NOTE: Original version for single environment pipelines.
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform plan (SE)'
+  condition: eq('${{ parameters.isMultipleEnvironments }}', 'false')
+  inputs:
+    allowTelemetryCollection: false
+    command: plan
+    commandOptions: '-compact-warnings -detailed-exitcode -input=false -var-file=${{ parameters.tfGlobalVarsFile }}'
+    environmentServiceName: 'name-of-service-connection-goes-here'
+    # Publish 'terraform plan' output to the pipeline run summary.
+    publishPlanResults: 'tfplan'
+    workingDirectory: ${{ parameters.workingdir }}
+
+
+# NOTE: New version for multi-environment pipelines.
+- task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-cli.TerraformCLI@0
+  displayName: 'Run terraform plan (ME)'  
+  condition: ne('${{ parameters.isMultipleEnvironments }}', 'false')
+  inputs:
+    allowTelemetryCollection: false
+    command: plan
+    commandOptions: '-compact-warnings -detailed-exitcode -input=false -var-file=${{ parameters.terraformEnvironmentVariablesFile }} -var-file=${{ parameters.tfGlobalVarsFile }}'
+    environmentServiceName: 'name-of-service-connection-goes-here'
+    # Publish 'terraform plan' output to the pipeline run summary.
+    publishPlanResults: 'tfplan'
+    workingDirectory: ${{ parameters.workingdir }} 
