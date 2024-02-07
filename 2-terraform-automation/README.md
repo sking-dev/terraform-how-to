@@ -37,3 +37,11 @@ Check out my [somewhat subjective guide here](Handle-Merge-Conflicts-GitOps-Work
 As an IaC engineer, I'd like to scan my Terraform code for any security misconfiguration issues and risks prior to merging and deploying any changes to my live environments.
 
 Feast your eyes on my [evaluation and configuration notes here](Set-Up-Security-Scanning-IaC-Pipeline.md).
+
+----
+
+## How to Set Up a Pipeline with Runtime Parameters
+
+As an IaC engineer, I'd like to be able to manually run a pipeline and deploy code based on parameters selected at runtime.
+
+Have a gander at [the pipeline YAML files and configuration notes](/2-terraform-automation/pipeline-runtime-parameters/README.md)
